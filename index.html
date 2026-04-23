@@ -194,7 +194,7 @@
             const itemDiv = document.createElement('div');
             itemDiv.className = 'pd-item';
             itemDiv.id = itemId;
-            itemDiv.innerHTML = `<div class="pd-item-header"><strong>Live Event</strong><button class="danger" style="padding: 6px 12px; font-size: 12px;" onclick="removeLiveEventItem('${itemId}')">Remove</button></div><div class="form-group"><label>Title with Date/Time</label><input type="text" id="${itemId}-title" placeholder="Feb. 3 @ 2PM: Using AI for Writing Instruction"></div><div class="form-group"><label>Link URL</label><input type="url" id="${itemId}-link" placeholder="https://..."></div><div class="form-group"><label>Summary</label><div id="${itemId}-summary" class="quill-editor"></div></div>`;
+            itemDiv.innerHTML = `<div class="pd-item-header"><strong>Live Event</strong><button class="danger" style="padding: 6px 12px; font-size: 12px;" onclick="removeLiveEventItem('${itemId}')">Remove</button></div><div class="form-group"><label>Title</label><input type="text" id="${itemId}-title" placeholder="Using AI for Writing Instruction"></div><div class="form-group"><label>Link URL (leave blank if multiple offerings)</label><input type="url" id="${itemId}-link" placeholder="https://..."></div><div class="form-group"><label>Date/Time</label><input type="text" id="${itemId}-datetime" placeholder="April 29, 2–3 PM"></div><div class="form-group"><label>Summary</label><div id="${itemId}-summary" class="quill-editor"></div></div>`;
             container.appendChild(itemDiv);
             quillInstances[`${itemId}-summary`] = new Quill(`#${itemId}-summary`, { theme: 'snow', modules: { toolbar: [['bold', 'italic'], ['link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }]] } });
         }
@@ -224,17 +224,26 @@
         
         function removeWordArtifacts(html) {
             return html
-                .replace(/\u200B/g, '')      // zero-width space
-                .replace(/\uFEFF/g, '')      // zero-width no-break space / BOM
-                .replace(/\u200C/g, '')      // zero-width non-joiner
-                .replace(/\u200D/g, '')      // zero-width joiner
-                .replace(/\u00AD/g, '')      // soft hyphen
-                .replace(/&ZeroWidthSpace;/g, '')  // HTML entity version
-                .replace(/&#8203;/g, '')     // numeric entity version
-                .replace(/&#x200B;/g, '');   // hex entity version
+                .replace(/\u200B/g, '')
+                .replace(/\uFEFF/g, '')
+                .replace(/\u200C/g, '')
+                .replace(/\u200D/g, '')
+                .replace(/\u00AD/g, '')
+                .replace(/&ZeroWidthSpace;/g, '')
+                .replace(/&#8203;/g, '')
+                .replace(/&#x200B;/g, '');
         }
-        
-        function styleQuillHTML(html) {
+
+        function isQuillEmpty(html) {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            return temp.textContent.trim() === '' && !temp.querySelector('img');
+        }
+
+        // lastMargin: what to put on the final element's margin shorthand.
+        // Use '0' for normal body copy; '0 0 20px 0' for intro text fields.
+        function styleQuillHTML(html, lastMargin = '0') {
+            if (isQuillEmpty(html)) return '';
             html = removeWordArtifacts(html);
             html = html.replace(/&nbsp;/g, ' ');
             const temp = document.createElement('div');
@@ -249,24 +258,41 @@
             const allElements = temp.querySelectorAll('p, li, ul, ol');
             if (allElements.length > 0) {
                 const last = allElements[allElements.length - 1];
-                last.setAttribute('style', (last.getAttribute('style') || '').replace(/margin(-bottom)?:\s*[^;]+;?/, 'margin: 0;'));
+                last.setAttribute('style', (last.getAttribute('style') || '').replace(/margin:\s*[^;]+;?/, `margin: ${lastMargin};`));
             }
             return temp.innerHTML;
         }
-        
-        function styleSummaryQuillHTML(html) {
+
+        // isLastEvent: when true, the final element gets margin: 0 (no trailing gap after the section's last item)
+        function styleSummaryQuillHTML(html, isLastEvent = false) {
+            if (isQuillEmpty(html)) return '';
             html = removeWordArtifacts(html);
             html = html.replace(/&nbsp;/g, ' ');
             const temp = document.createElement('div');
             temp.innerHTML = html;
             const spans = temp.querySelectorAll('span');
             spans.forEach(span => { const parent = span.parentNode; while (span.firstChild) parent.insertBefore(span.firstChild, span); parent.removeChild(span); });
-            const paras = temp.querySelectorAll('p');
-            paras.forEach((p, idx) => {
-                const margin = idx === paras.length - 1 ? '0 0 30px 0' : '0 0 15px 0';
+
+            // Style <ul> and <li>
+            temp.querySelectorAll('ul').forEach(ul => ul.setAttribute('style', "margin: 0 0 30px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"));
+            temp.querySelectorAll('li').forEach(li => li.setAttribute('style', 'margin: 0 0 5px 0;'));
+
+            // Style <p> — if immediately followed by a <ul>, use tighter margin
+            temp.querySelectorAll('p').forEach(p => {
+                const next = p.nextElementSibling;
+                const margin = (next && next.tagName === 'UL') ? '0 0 5px 0' : '0 0 15px 0';
                 p.setAttribute('style', `margin: ${margin}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;`);
             });
+
             temp.querySelectorAll('a').forEach(a => a.setAttribute('style', 'color: #0078d4; text-decoration: underline;'));
+
+            // Apply trailing margin to the last top-level child
+            const children = Array.from(temp.children);
+            if (children.length > 0) {
+                const last = children[children.length - 1];
+                const trailingMargin = isLastEvent ? '0' : '0 0 20px 0';
+                last.setAttribute('style', (last.getAttribute('style') || '').replace(/margin:\s*[^;]+;?/, `margin: ${trailingMargin};`));
+            }
             return temp.innerHTML;
         }
         
@@ -386,21 +412,24 @@
 `;
                 } else if (type === 'full-pd') {
                     const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML);
+                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML, '0 0 20px 0');
                     let pdHTML = '';
-                    document.querySelectorAll(`#${sectionId}-pd-items .pd-item`).forEach(item => {
+                    const pdItems = document.querySelectorAll(`#${sectionId}-pd-items .pd-item`);
+                    pdItems.forEach((item, pdIdx) => {
                         const itemId = item.id;
                         const title = document.getElementById(`${itemId}-title`).value;
                         const itemLink = document.getElementById(`${itemId}-link`).value;
-                        const duration = document.getElementById(`${itemId}-duration`).value;
-                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML);
+                        const duration = document.getElementById(`${itemId}-duration`).value.trim();
+                        const isLastItem = pdIdx === pdItems.length - 1;
+                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML, isLastItem);
                         pdHTML += `
-                            <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">▶️ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a> (${escapeHtml(duration)})</strong></p>
+                            <p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">▶️ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a></strong></p>
+                            ${duration ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><em>${escapeHtml(duration)}</em></p>` : ''}
                             ${summary}
 `;
                     });
                     const tip = styleQuillHTML(quillInstances[`${sectionId}-tip`].root.innerHTML);
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 10px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
+                    const headingHTML = heading ? `<h2 style="margin: 0 0 ${intro ? '10px' : '20px'} 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
                     emailHTML += `
                     <!-- Section ${index + 1}: PD List -->
                     <tr>
@@ -414,19 +443,26 @@
 `;
                 } else if (type === 'live-events') {
                     const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML);
+                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML, '0 0 20px 0');
                     let liveHTML = '';
-                    document.querySelectorAll(`#${sectionId}-live-items .pd-item`).forEach(item => {
+                    const liveItems = document.querySelectorAll(`#${sectionId}-live-items .pd-item`);
+                    liveItems.forEach((item, liveIdx) => {
                         const itemId = item.id;
                         const title = document.getElementById(`${itemId}-title`).value;
-                        const itemLink = document.getElementById(`${itemId}-link`).value;
-                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML);
+                        const itemLink = document.getElementById(`${itemId}-link`).value.trim();
+                        const datetime = document.getElementById(`${itemId}-datetime`).value.trim();
+                        const isLastItem = liveIdx === liveItems.length - 1;
+                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML, isLastItem);
+                        const titleHTML = itemLink
+                            ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">⭐ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a></strong></p>`
+                            : `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;">⭐ <strong>${escapeHtml(title)}</strong></p>`;
                         liveHTML += `
-                            <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">⭐ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a></strong></p>
+                            ${titleHTML}
+                            ${datetime ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><em>${escapeHtml(datetime)}</em></p>` : ''}
                             ${summary}
 `;
                     });
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 10px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
+                    const headingHTML = heading ? `<h2 style="margin: 0 0 ${intro ? '10px' : '20px'} 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
                     emailHTML += `
                     <!-- Section ${index + 1}: Live Events -->
                     <tr>
@@ -455,7 +491,7 @@
                     <tr>
                         <td style="background-color: #ffffff; padding: 0px; text-align: left;">
                             <a href="https://www.dallascollege.edu/" style="display: block; text-decoration: none; border: 0;">
-                                <img alt="Dallas College" style="width: 200px; height: auto; display: block; margin: 40px 0px 20px 40px; border: 0;" src="data:image/webp;base64,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az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDEgNzkuYThkNDc1MywgMjAyMy8wMy8yMy0wODo1NjozNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJjcmVhdGVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgc3RFdnQ6d2hlbj0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pg==">
+                                <img alt="Dallas College" style="width: 200px; height: auto; display: block; margin: 40px 0px 20px 40px; border: 0;" src="data:image/webp;base64,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az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDEgNzkuYThkNDc1MywgMjAyMy8wMy8yMy0wODo1NjozNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJjcmVhdGVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgc3RFdnQ6d2hlbj0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pg==">
                             </a>
                             <p style="margin: 0px 0px 30px 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #323130; line-height: 1.6;">Supervisors, please be sure to forward this message to your new employees to ensure they've received it.</p>
                         </td>
