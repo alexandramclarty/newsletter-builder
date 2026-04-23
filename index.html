@@ -458,7 +458,7 @@
                             : `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;">⭐ <strong>${escapeHtml(title)}</strong></p>`;
                         liveHTML += `
                             ${titleHTML}
-                            ${datetime ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><em>${escapeHtml(datetime)}</em></p>` : ''}
+                            ${datetime ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;">${itemLink ? `<a href="${itemLink}" style="color: #323130; text-decoration: none;" aria-hidden="true" tabindex="-1"><em>${escapeHtml(datetime)}</em></a>` : `<em>${escapeHtml(datetime)}</em>`}</p>` : ''}
                             ${summary}
 `;
                     });
