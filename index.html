@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CETL Newsletter Generator</title>
-    
+    <title>CETL Newsletter Builder</title>
+
     <!-- Quill.js -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    
+
     <style>
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
@@ -18,296 +18,927 @@
         .form-section { background: white; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-section h2 { margin-top: 0; color: #323130; font-size: 20px; border-bottom: 2px solid #0078d4; padding-bottom: 10px; }
         .form-group { margin-bottom: 20px; }
+        .form-group.tight { margin-bottom: 10px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #323130; }
-        input[type="text"], input[type="url"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; }
-        textarea { resize: vertical; min-height: 80px; font-family: 'Courier New', monospace; font-size: 12px; }
+        input[type="text"], input[type="url"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; background: white; }
+        textarea { resize: vertical; min-height: 80px; }
         .quill-editor { background: white; border: 1px solid #ccc; border-radius: 4px; }
         .ql-editor { min-height: 120px; }
         button { background: #0078d4; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
         button:hover { background: #106ebe; }
+        button:focus-visible { outline: 3px solid #002f87; outline-offset: 2px; }
         button.secondary { background: #f3f2f1; color: #323130; border: 1px solid #ccc; }
         button.secondary:hover { background: #e1dfdd; }
         button.danger { background: #a4262c; }
         button.danger:hover { background: #8a1c20; }
-        .section-type-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        button.icon { background: #f3f2f1; color: #323130; border: 1px solid #ccc; padding: 6px 10px; font-size: 13px; }
+        button.icon:hover { background: #e1dfdd; }
+        button.icon:disabled { opacity: 0.35; cursor: not-allowed; }
+        .section-type-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 15px; margin: 20px 0 0 0; }
         .section-type-btn { padding: 20px; text-align: center; background: #f3f2f1; border: 2px solid #e1dfdd; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .section-type-btn:hover { background: #e1dfdd; border-color: #0078d4; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .section-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 10px; }
-        .badge-blue { background: #eff6fc; color: #0078d4; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .section-header h2 { border: 0; padding: 0; margin: 0; flex: 1 1 auto; }
+        .section-controls { display: flex; gap: 6px; align-items: center; }
+        .section-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 10px; vertical-align: middle; }
         .badge-white { background: #f3f2f1; color: #323130; }
+        .badge-blue { background: #eff6fc; color: #0078d4; }
+        .badge-navy { background: #002f87; color: #ffffff; }
+        .rule { border: 0; border-top: 2px solid #0078d4; margin: 0 0 20px 0; }
         .pd-item { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-left: 3px solid #0078d4; border-radius: 4px; }
         .pd-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .tag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+        .checkbox-row input { width: auto; }
+        .checkbox-row label { margin: 0; font-weight: 400; }
+        .hint { font-size: 12px; color: #605e5c; font-weight: 400; margin-top: 4px; }
+        .clock-preview { font-size: 20px; line-height: 1; }
         #output-section { margin-top: 30px; }
         #html-output { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px; max-height: 500px; overflow-y: auto; }
         .copy-btn { margin-top: 10px; }
         .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        .empty-state { color: #605e5c; font-size: 14px; margin: 0; }
     </style>
 </head>
 <body>
-    <h1>📧 CETL Newsletter Generator</h1>
-    
+    <h1>CETL Newsletter Builder</h1>
+
     <div class="form-section">
-        <h2>View in Browser Link</h2>
+        <h2>View in Browser</h2>
         <div class="form-group">
-            <label for="browser-url">SharePoint URL</label>
-            <input type="url" id="browser-url" placeholder="https://dcccd.sharepoint.com/sites/...">
+            <label for="browser-url">Page URL</label>
+            <input type="url" id="browser-url" placeholder="https://dcccd.sharepoint.com/sites/FacultyOneStop/SitePages/CETL-News-2026-09-04.aspx">
         </div>
     </div>
-    
+
     <div class="form-section">
-        <h2>Opening Section <span class="section-badge badge-white">White Background</span></h2>
+        <h2>Intro</h2>
         <div class="form-group">
             <label for="opening-heading">Heading</label>
-            <input type="text" id="opening-heading" placeholder="Welcome back, Faculty!">
+            <input type="text" id="opening-heading" placeholder="Hello, Faculty! 👋">
+            <p class="hint">Emoji are wrapped for screen readers automatically.</p>
         </div>
         <div class="form-group">
-            <label>Body Copy</label>
+            <label>Body copy</label>
             <div id="opening-body" class="quill-editor"></div>
+            <p class="hint">“Questions? Contact CETL.” is added to the end automatically.</p>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="include-toc" checked>
+            <label for="include-toc">Include the “In This Email” list</label>
         </div>
     </div>
-    
+
     <div id="sections-container"></div>
-    
+
     <div class="form-section">
-        <h2>Add Section</h2>
+        <h2>Add a block</h2>
         <div class="section-type-selector">
-            <div class="section-type-btn" onclick="addSection('heading-bar')">
-                <div style="font-size: 32px; margin-bottom: 10px;">📌</div>
-                <strong>Heading Bar</strong>
-                <div style="font-size: 12px; margin-top: 5px; color: #666;">Dark Blue Header</div>
-            </div>
-            <div class="section-type-btn" onclick="addSection('full-simple')">
+            <div class="section-type-btn" onclick="addSection('text')">
                 <div style="font-size: 32px; margin-bottom: 10px;">📄</div>
-                <strong>Full Width Simple</strong>
-                <div style="font-size: 12px; margin-top: 5px; color: #666;">Heading + Body</div>
+                <strong>Text</strong>
+                <div style="font-size: 12px; margin-top: 5px; color: #666;">Bordered card on white</div>
             </div>
-            <div class="section-type-btn" onclick="addSection('two-column')">
-                <div style="font-size: 32px; margin-bottom: 10px;">📝🖼️</div>
-                <strong>Two Column</strong>
-                <div style="font-size: 12px; margin-top: 5px; color: #666;">Text + Image</div>
+            <div class="section-type-btn" onclick="addSection('highlight')">
+                <div style="font-size: 32px; margin-bottom: 10px;">📣</div>
+                <strong>Highlight</strong>
+                <div style="font-size: 12px; margin-top: 5px; color: #666;">Navy bar, blue background</div>
             </div>
-            <div class="section-type-btn" onclick="addSection('live-events')">
-                <div style="font-size: 32px; margin-bottom: 10px;">⭐</div>
-                <strong>Live Events List</strong>
-                <div style="font-size: 12px; margin-top: 5px; color: #666;">Upcoming Sessions</div>
+            <div class="section-type-btn" onclick="addSection('live')">
+                <div style="font-size: 32px; margin-bottom: 10px;">🗓️</div>
+                <strong>Live Webinars</strong>
+                <div style="font-size: 12px; margin-top: 5px; color: #666;">Navy bar, dated cards</div>
             </div>
-            <div class="section-type-btn" onclick="addSection('full-pd')">
-                <div style="font-size: 32px; margin-bottom: 10px;">📚</div>
-                <strong>On-Demand List</strong>
-                <div style="font-size: 12px; margin-top: 5px; color: #666;">Recorded Sessions</div>
+            <div class="section-type-btn" onclick="addSection('recorded')">
+                <div style="font-size: 32px; margin-bottom: 10px;">▶️</div>
+                <strong>Recorded Webinars</strong>
+                <div style="font-size: 12px; margin-top: 5px; color: #666;">Navy bar, on-demand cards</div>
             </div>
         </div>
     </div>
-    
+
+
     <div class="button-group">
-        <button onclick="generateHTML()" style="font-size: 16px; padding: 15px 30px;">✨ Generate Newsletter HTML</button>
+        <button onclick="generateHTML()" style="font-size: 16px; padding: 15px 30px;">Generate newsletter HTML</button>
     </div>
-    
+
     <div id="output-section" style="display: none;">
         <div class="form-section">
             <h2>Generated HTML</h2>
             <div id="html-output"></div>
-            <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+            <button class="copy-btn" onclick="copyToClipboard()">Copy to clipboard</button>
         </div>
     </div>
-    
-    <script>
-        const openingBodyQuill = new Quill('#opening-body', {
-            theme: 'snow',
-            placeholder: 'Questions? Contact the Center for Excellence in Teaching and Learning.',
-            modules: { toolbar: [['bold', 'italic'], ['link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }]] }
+
+<script>
+/* ============================================================
+   Shared constants
+   ============================================================ */
+
+const FF = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+const ENT = {
+    trophy:   '&#127942;',            // 🏆
+    pin:      '&#128205;',            // 📍
+    laptop:   '&#128187;',            // 💻
+    play:     '&#9654;&#65039;',      // ▶️
+    calendar: '&#128197;'             // 📅  (fallback when no time can be read)
+};
+
+// Mode presets: emoji entity + the label they prefill.
+const MODES = {
+    inperson: { entity: ENT.pin,    label: '' },
+    online:   { entity: ENT.laptop, label: 'Live online' },
+    recorded: { entity: ENT.play,   label: 'Recorded webinar' },
+    none:     { entity: '',         label: '' }
+};
+
+/* ============================================================
+   Text helpers
+   ============================================================ */
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : text;
+    return div.innerHTML;
+}
+
+function escapeAttr(text) {
+    return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Emoji runs, including ZWJ sequences and variation selectors.
+const EMOJI_RUN = /(?:\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)+/gu;
+
+// Smart punctuation as entities, the way the template writes it. Keeps the
+// copy safe if the HTML is pasted somewhere that mangles UTF-8.
+const PUNCT = {
+    '\u2013': '&ndash;', '\u2014': '&mdash;',
+    '\u2018': '&lsquo;', '\u2019': '&rsquo;',
+    '\u201C': '&ldquo;', '\u201D': '&rdquo;',
+    '\u2026': '&hellip;'
+};
+
+function encodePunctuation(html) {
+    return html.replace(/[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/g, c => PUNCT[c]);
+}
+
+function stripEmoji(text) {
+    return (text || '').replace(EMOJI_RUN, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function toEntities(str) {
+    let out = '';
+    for (const ch of str) out += '&#' + ch.codePointAt(0) + ';';
+    return out;
+}
+
+// Wrap any emoji in an aria-hidden span and convert to numeric entities,
+// matching how the template handles decorative glyphs.
+function wrapEmoji(escapedText) {
+    return escapedText.replace(EMOJI_RUN, m => '<span aria-hidden="true">' + toEntities(m) + '</span>');
+}
+
+// Escape + emoji-wrap in one step, for headings, tags and button labels.
+function safeText(text) {
+    return encodePunctuation(wrapEmoji(escapeHtml((text || '').trim())));
+}
+
+// Plain-text version for aria-labels and the "In This Email" list, where
+// decorative emoji are just noise.
+function plainText(text) {
+    return encodePunctuation(escapeHtml(stripEmoji(text)));
+}
+
+function slugify(text, used) {
+    let base = (text || '')
+        .toLowerCase()
+        .replace(EMOJI_RUN, '')
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    if (!base) base = 'section';
+    let slug = base, n = 2;
+    while (used.has(slug)) slug = base + '-' + (n++);
+    used.add(slug);
+    return slug;
+}
+
+/* ============================================================
+   Click source tracking
+   Appends ?clicksource=title | tag | button so the three copies of
+   the same destination can be told apart in reporting.
+   ============================================================ */
+
+function addClickSource(url, source) {
+    let u = (url || '').trim();
+    if (!u) return '';
+    u = u.replace(/&amp;/gi, '&');
+
+    let hash = '';
+    const hi = u.indexOf('#');
+    if (hi !== -1) { hash = u.slice(hi); u = u.slice(0, hi); }
+
+    let base = u, query = '';
+    const qi = u.indexOf('?');
+    if (qi !== -1) { base = u.slice(0, qi); query = u.slice(qi + 1); }
+
+    const parts = query.split('&').filter(p => p && !/^clicksource=/i.test(p));
+    parts.push('clicksource=' + source);
+
+    return escapeAttr(base + '?' + parts.join('&') + hash);
+}
+
+/* ============================================================
+   Clock emoji
+   Reads the start time out of a free-text date string and returns the
+   matching clock face. Clock emoji have no AM/PM distinction, so only
+   the hour and minute matter.
+   ============================================================ */
+
+const MONTH_WORD = '(?:jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\\.?';
+
+function parseStartTime(text) {
+    if (!text) return null;
+    let s = ' ' + text.toLowerCase() + ' ';
+
+    // Strip the date so day-of-month numbers aren't mistaken for hours.
+    // Handles "Sept. 11", "September 11th", "Sept. 11 & 12", "Oct. 30–31".
+    // A trailing number is only treated as part of the date when it isn't
+    // followed by a colon or a meridiem, so "Oct. 30 - 9 a.m." survives.
+    const dateRe = new RegExp(
+        '\\b' + MONTH_WORD + '\\s*\\d{1,2}(?:st|nd|rd|th)?' +
+        '(?:\\s*(?:[\\u2013\\u2014-]|&|and)\\s*\\d{1,2}(?:st|nd|rd|th)?(?!\\s*[:ap]))*',
+        'gi'
+    );
+    s = s.replace(dateRe, ' ');
+    s = s.replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, ' ');   // 9/16, 9/16/26
+    s = s.replace(/\b(?:19|20)\d{2}\b/g, ' ');                    // years
+
+    const timeMatch = /\b(\d{1,2})(?::(\d{2}))?\b/.exec(s);
+    const noonMatch = /\b(noon|midnight)\b/.exec(s);
+
+    // "Noon–1 p.m." — whichever comes first wins.
+    if (noonMatch && (!timeMatch || noonMatch.index < timeMatch.index)) {
+        return { hour: 12, minute: 0 };
+    }
+    if (!timeMatch) return null;
+
+    let hour = parseInt(timeMatch[1], 10);
+    const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    if (hour < 1 || hour > 24 || minute > 59) return null;
+
+    return { hour, minute };
+}
+
+function clockEntityFor(hour, minute) {
+    let h = hour % 12;
+    if (h === 0) h = 12;
+
+    let half = false;
+    if (minute >= 45) { h = (h % 12) + 1; }        // round up to the next hour
+    else if (minute >= 15) { half = true; }        // round to the half hour
+
+    const base = half ? 128348 : 128336;           // 🕜 U+1F55C : 🕐 U+1F550
+    return '&#' + (base + (h - 1)) + ';';
+}
+
+// Public: free-text date string in, clock (or calendar fallback) entity out.
+function clockFor(text) {
+    const t = parseStartTime(text);
+    return t ? clockEntityFor(t.hour, t.minute) : ENT.calendar;
+}
+
+function renderClockPreview(input) {
+    const el = input.parentNode.querySelector('.clock-preview');
+    if (!el) return;
+    const val = input.value.trim();
+    if (!val) { el.innerHTML = ''; return; }
+    const ent = clockFor(val);
+    el.innerHTML = ent + (ent === ENT.calendar
+        ? ' <span class="hint" style="display:inline">No start time found — using a calendar icon.</span>'
+        : '');
+}
+
+/* ============================================================
+   Quill output styling
+   ============================================================ */
+
+function removeWordArtifacts(html) {
+    return html
+        .replace(/\u200B/g, '').replace(/\uFEFF/g, '')
+        .replace(/\u200C/g, '').replace(/\u200D/g, '')
+        .replace(/\u00AD/g, '')
+        .replace(/&ZeroWidthSpace;/g, '')
+        .replace(/&#8203;/g, '').replace(/&#x200B;/g, '');
+}
+
+function isQuillEmpty(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent.trim() === '' && !temp.querySelector('img');
+}
+
+// lastMargin: margin shorthand for the final block element.
+function styleQuillHTML(html, lastMargin = '0') {
+    if (isQuillEmpty(html)) return '';
+    html = removeWordArtifacts(html).replace(/&nbsp;/g, ' ');
+
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Unwrap Quill's styling spans.
+    temp.querySelectorAll('span').forEach(span => {
+        const parent = span.parentNode;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+    });
+
+    temp.querySelectorAll('p').forEach(p => {
+        const prev = p.previousElementSibling;
+        const next = p.nextElementSibling;
+        const isList = el => el && (el.tagName === 'UL' || el.tagName === 'OL');
+        // Outlook Classic drops li margins, so the gap after a list lives on
+        // the following paragraph instead.
+        const top = isList(prev) ? '20px' : '0';
+        const bottom = isList(next) ? '5px' : '20px';
+        p.setAttribute('style', `mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; color: #323130; margin: ${top} 0 ${bottom} 0; line-height: 24px;`);
+    });
+
+    temp.querySelectorAll('ul, ol').forEach(list => {
+        list.setAttribute('style', `margin: 0; padding-left: 20px; font-family: ${FF}; font-size: 16px; color: #323130; line-height: 24px;`);
+        const items = Array.from(list.children).filter(el => el.tagName === 'LI');
+        items.forEach((li, i) => li.setAttribute('style', i === items.length - 1 ? 'margin: 0;' : 'margin: 0 0 5px 0;'));
+    });
+
+    temp.querySelectorAll('a').forEach(a => a.setAttribute('style', 'color: #0078d4;'));
+
+    const blocks = Array.from(temp.children);
+    if (blocks.length) {
+        const last = blocks[blocks.length - 1];
+        const style = last.getAttribute('style') || '';
+        last.setAttribute('style', /margin:/.test(style)
+            ? style.replace(/margin:\s*[^;]+;?/, `margin: ${lastMargin};`)
+            : `margin: ${lastMargin}; ` + style);
+    }
+
+    const out = Array.from(temp.childNodes)
+        .map(n => n.nodeType === 1 ? n.outerHTML : (n.textContent || '').trim())
+        .filter(Boolean)
+        .join('\n')
+        .replace(/(<(?:ul|ol)[^>]*>)<li/g, '$1\n<li')
+        .replace(/<\/li><li/g, '</li>\n<li')
+        .replace(/<\/li><\/(ul|ol)>/g, '</li>\n</$1>');
+
+    return encodePunctuation(out);
+}
+
+function indent(html, spaces) {
+    if (!html) return '';
+    const pad = ' '.repeat(spaces);
+    return html.split('\n').map(l => l.trim() ? pad + l.trim() : '').filter(Boolean).join('\n');
+}
+
+/* ============================================================
+   Email fragment builders
+   ============================================================ */
+
+// tags: [{ entity, text }] — the first tag carries the link when there is one.
+function buildTagRow(tags, url) {
+    const live = tags.filter(t => t && t.text && t.text.trim());
+    if (!live.length) return '';
+
+    const tagHref = url ? addClickSource(url, 'tag') : '';
+    const tagCells = live.map((tag, i) => {
+        const glyph = tag.entity ? `<span aria-hidden="true">${tag.entity}</span> ` : '';
+        const label = glyph + safeText(tag.text);
+        const inner = (i === 0 && tagHref)
+            ? `<p style="margin: 0px; padding: 0px; mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; line-height: 21px;"><a href="${tagHref}" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; line-height: 21px; font-weight: bold; color: #323130; text-decoration: none; display: block; padding: 5px; text-align: left;">${label}</a></p>`
+            : `<p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; line-height: 21px; font-weight: bold; color: #323130; margin: 0; padding: 5px; text-align: left;">${label}</p>`;
+
+        return `<table role="presentation" align="left" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 7.5pt; float: left; margin: 0 10px 10px 0;">
+    <tr>
+        <td class="cetl-tag-cell" bgcolor="#f4f4f4" style="background-color: #f4f4f4; padding: 0; mso-padding-alt: 5px; text-align: left; border: 3px solid #dbdbdb;">
+            ${inner}
+        </td>
+    </tr>
+</table>`;
+    });
+
+    // 1px MSO spacer paragraphs keep the tags from colliding in Outlook Classic.
+    const spacer = `<!--[if mso]><p style="margin: 0; padding: 0; font-size: 1px; line-height: 1px; mso-line-height-rule: exactly;">&nbsp;</p><![endif]-->`;
+
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
+    <tr>
+        <td>
+            ${tagCells.join('\n' + spacer + '\n')}
+        </td>
+    </tr>
+</table>`;
+}
+
+function buildButton(label, url, contextTitle) {
+    if (!label || !label.trim() || !url || !url.trim()) return '';
+    const href = addClickSource(url, 'button');
+    const aria = contextTitle && contextTitle.trim()
+        ? escapeAttr(stripEmoji(label) + ': ' + stripEmoji(contextTitle))
+        : escapeAttr(stripEmoji(label));
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+    <tr>
+        <td bgcolor="#BD141F" align="center" style="background-color: #BD141F; border-radius: 30px; padding: 0; mso-padding-alt: 15px 24px; text-align: center;">
+            <a class="cetl-btn-link" aria-label="${aria}" href="${href}" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; line-height: 20px; font-weight: bold; color: #ffffff; text-decoration: none; display: block; padding: 15px 24px;">${safeText(label)}</a>
+        </td>
+    </tr>
+</table>`;
+}
+
+function buildNavyBar(heading, anchor, padding) {
+    return `                <tr>
+                    <td id="${anchor}" bgcolor="#002F87" class="cetl-pad cetl-navy" style="background-color: #002F87; padding: ${padding};">
+                        <h2 class="cetl-h2" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; line-height: 32px;">${safeText(heading)}</h2>
+                    </td>
+                </tr>
+`;
+}
+
+const NAVY_RULE = `                <tr>
+                    <td bgcolor="#002F87" height="5" class="cetl-navy" style="background-color: #002F87; height: 5px; font-size: 0; line-height: 0; mso-line-height-rule: exactly;">&nbsp;</td>
+                </tr>
+`;
+
+const CARD_SPACER = `                            <tr>
+                                <td height="20" style="height: 20px; font-size: 0; line-height: 0; mso-line-height-rule: exactly;"></td>
+                            </tr>
+`;
+
+// A bordered webinar card: h3 title link, tag row, summary, button.
+function buildCard(card) {
+    const title = (card.title || '').trim();
+    const url = (card.url || '').trim();
+    const heading = url
+        ? `<h3 style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 20px; font-weight: bold; color: #323130; margin: 0 0 15px 0; line-height: 27px;"><a href="${addClickSource(url, 'title')}" style="color: #0078d4; text-decoration: none;">${safeText(title)}</a></h3>`
+        : `<h3 style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 20px; font-weight: bold; color: #323130; margin: 0 0 15px 0; line-height: 27px;">${safeText(title)}</h3>`;
+
+    const tags = buildTagRow(card.tags, url);
+    const button = buildButton(card.buttonLabel, url, title);
+    const summary = styleQuillHTML(card.summaryHTML || '', button ? '0 0 20px 0' : '0');
+
+    const parts = [heading, tags, summary, button].filter(Boolean);
+    return `                            <tr>
+                                <td bgcolor="#ffffff" class="cetl-card-pad" style="padding: 24px; border: 3px solid #dbdbdb;">
+${parts.map(p => indent(p, 36)).join('\n')}
+                                </td>
+                            </tr>
+`;
+}
+
+/* ============================================================
+   Builder UI state
+   ============================================================ */
+
+let sectionCounter = 0;
+let itemCounter = 0;
+let quillInstances = {};
+
+const QUILL_TOOLBAR = { toolbar: [['bold', 'italic'], ['link'], [{ list: 'ordered' }, { list: 'bullet' }]] };
+
+const openingBodyQuill = new Quill('#opening-body', {
+    theme: 'snow',
+    placeholder: 'In this newsletter…',
+    modules: QUILL_TOOLBAR
+});
+
+const SECTION_META = {
+    text:      { name: 'Text',              badge: 'badge-white', bg: 'White card' },
+    highlight: { name: 'Highlight',         badge: 'badge-blue',  bg: 'Blue' },
+    live:      { name: 'Live Webinars',     badge: 'badge-navy',  bg: 'Navy bar' },
+    recorded:  { name: 'Recorded Webinars', badge: 'badge-navy',  bg: 'Navy bar' }
+};
+
+function modeSelectHTML(id, selected) {
+    const opts = [
+        ['inperson', 'In person 📍'],
+        ['online',   'Live online 💻'],
+        ['recorded', 'Recorded webinar ▶️'],
+        ['none',     'No icon']
+    ];
+    return `<select id="${id}" onchange="applyModePreset('${id}')">` +
+        opts.map(([v, l]) => `<option value="${v}"${v === selected ? ' selected' : ''}>${l}</option>`).join('') +
+        `</select>`;
+}
+
+function applyModePreset(selectId) {
+    const select = document.getElementById(selectId);
+    const textInput = document.getElementById(selectId + '-text');
+    if (!select || !textInput) return;
+    const preset = MODES[select.value];
+    // Only overwrite when the field is empty or still holds another preset label.
+    const presetLabels = Object.values(MODES).map(m => m.label).filter(Boolean);
+    if (!textInput.value.trim() || presetLabels.includes(textInput.value.trim())) {
+        textInput.value = preset.label;
+    }
+}
+
+function tagFieldsHTML(prefix, opts) {
+    const o = opts || {};
+    return `
+        <div class="tag-grid">
+            ${o.date === false ? '' : `
+            <div class="form-group tight">
+                <label for="${prefix}-date">Date and time tag</label>
+                <input type="text" id="${prefix}-date" placeholder="Sept. 11, 9 a.m.–12 p.m." oninput="renderClockPreview(this)">
+                <div class="clock-preview"></div>
+                <p class="hint">Clock icon is set from the start time.</p>
+            </div>`}
+            <div class="form-group tight">
+                <label for="${prefix}-mode">Mode tag</label>
+                ${modeSelectHTML(prefix + '-mode', o.mode || 'online')}
+                <input type="text" id="${prefix}-mode-text" style="margin-top: 8px;" placeholder="Live online" value="${o.modeLabel != null ? o.modeLabel : (MODES[o.mode || 'online'].label)}">
+            </div>
+            <div class="form-group tight">
+                <label for="${prefix}-credit">PD credit tag</label>
+                <input type="text" id="${prefix}-credit" placeholder="1 PD hour">
+                <p class="hint">Trophy icon added automatically.</p>
+            </div>
+        </div>`;
+}
+
+function addSection(type) {
+    sectionCounter++;
+    const sectionId = `section-${sectionCounter}`;
+    const container = document.getElementById('sections-container');
+
+    const div = document.createElement('div');
+    div.className = 'form-section';
+    div.id = sectionId;
+    div.dataset.type = type;
+
+    let body = '';
+
+    if (type === 'text' || type === 'highlight') {
+        body = `
+        <div class="form-group">
+            <label for="${sectionId}-heading">Heading</label>
+            <input type="text" id="${sectionId}-heading" placeholder="Section heading">
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="${sectionId}-tags-on" onchange="toggleTags('${sectionId}')">
+            <label for="${sectionId}-tags-on">Add tags</label>
+        </div>
+        <div id="${sectionId}-tags" style="display: none;">${tagFieldsHTML(sectionId, { mode: 'inperson', modeLabel: '' })}</div>
+        <div class="form-group">
+            <label>Body copy</label>
+            <div id="${sectionId}-body" class="quill-editor"></div>
+        </div>
+        <hr class="rule">
+        <div class="tag-grid">
+            <div class="form-group tight">
+                <label for="${sectionId}-btn-label">Button label <span style="font-weight:400">(optional)</span></label>
+                <input type="text" id="${sectionId}-btn-label" placeholder="Register now">
+            </div>
+            <div class="form-group tight">
+                <label for="${sectionId}-btn-url">Button URL</label>
+                <input type="url" id="${sectionId}-btn-url" placeholder="https://…">
+            </div>
+        </div>
+        <p class="hint">The button URL also links the first tag.</p>`;
+    } else {
+        const isLive = type === 'live';
+        body = `
+        <div class="form-group">
+            <label for="${sectionId}-heading">Heading</label>
+            <input type="text" id="${sectionId}-heading" placeholder="${isLive ? 'Attend Live PD Sessions for Credit' : 'Earn PD Credit Anytime with Recorded Webinars'}">
+        </div>
+        <div class="form-group">
+            <label>Intro text <span style="font-weight:400">(optional)</span></label>
+            <div id="${sectionId}-intro" class="quill-editor"></div>
+        </div>
+        <hr class="rule">
+        <div id="${sectionId}-items"><p class="empty-state">No ${isLive ? 'sessions' : 'webinars'} yet.</p></div>
+        <button class="secondary" onclick="addItem('${sectionId}', '${type}')">Add ${isLive ? 'session' : 'webinar'}</button>`;
+    }
+
+    div.innerHTML = `
+        <div class="section-header">
+            <h2></h2>
+            <div class="section-controls">
+                <button class="icon" onclick="moveSection('${sectionId}', -1)" title="Move up">↑</button>
+                <button class="icon" onclick="moveSection('${sectionId}', 1)" title="Move down">↓</button>
+                <button class="danger" onclick="removeSection('${sectionId}')">Remove</button>
+            </div>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="${sectionId}-toc" checked>
+            <label for="${sectionId}-toc">List in “In This Email”</label>
+        </div>
+        ${body}`;
+
+    container.appendChild(div);
+
+    if (type === 'text' || type === 'highlight') {
+        quillInstances[`${sectionId}-body`] = new Quill(`#${sectionId}-body`, { theme: 'snow', modules: QUILL_TOOLBAR });
+    } else {
+        quillInstances[`${sectionId}-intro`] = new Quill(`#${sectionId}-intro`, { theme: 'snow', modules: QUILL_TOOLBAR });
+        addItem(sectionId, type);
+    }
+
+    refreshSectionHeaders();
+}
+
+function toggleTags(sectionId) {
+    const on = document.getElementById(`${sectionId}-tags-on`).checked;
+    document.getElementById(`${sectionId}-tags`).style.display = on ? 'block' : 'none';
+}
+
+function addItem(sectionId, type) {
+    itemCounter++;
+    const isLive = type === 'live';
+    const itemId = `${sectionId}-item-${itemCounter}`;
+    const container = document.getElementById(`${sectionId}-items`);
+    const empty = container.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = 'pd-item';
+    div.id = itemId;
+    div.innerHTML = `
+        <div class="pd-item-header">
+            <strong>${isLive ? 'Live session' : 'Recorded webinar'}</strong>
+            <div class="section-controls">
+                <button class="icon" onclick="moveItem('${itemId}', -1)" title="Move up">↑</button>
+                <button class="icon" onclick="moveItem('${itemId}', 1)" title="Move down">↓</button>
+                <button class="danger" style="padding: 6px 12px; font-size: 12px;" onclick="removeItem('${itemId}')">Remove</button>
+            </div>
+        </div>
+        <div class="form-group tight">
+            <label for="${itemId}-title">Title</label>
+            <input type="text" id="${itemId}-title" placeholder="${isLive ? 'Foundations of Cooperative Learning Workshop' : 'Understanding the Gen Z Student'}">
+        </div>
+        <div class="form-group tight">
+            <label for="${itemId}-url">Link URL</label>
+            <input type="url" id="${itemId}-url" placeholder="https://…">
+        </div>
+        ${tagFieldsHTML(itemId, isLive ? { mode: 'online' } : { date: false, mode: 'recorded' })}
+        <div class="form-group tight">
+            <label>Summary</label>
+            <div id="${itemId}-summary" class="quill-editor"></div>
+        </div>
+        <div class="form-group tight" style="margin-top: 15px;">
+            <label for="${itemId}-btn-label">Button label</label>
+            <input type="text" id="${itemId}-btn-label" value="${isLive ? 'Register now' : 'Watch now'}">
+        </div>`;
+
+    container.appendChild(div);
+    quillInstances[`${itemId}-summary`] = new Quill(`#${itemId}-summary`, { theme: 'snow', modules: QUILL_TOOLBAR });
+}
+
+function removeItem(itemId) {
+    const el = document.getElementById(itemId);
+    const container = el.parentNode;
+    el.remove();
+    delete quillInstances[`${itemId}-summary`];
+    if (!container.children.length) {
+        container.innerHTML = '<p class="empty-state">No items yet.</p>';
+    }
+}
+
+function moveItem(itemId, delta) {
+    const el = document.getElementById(itemId);
+    const sibling = delta < 0 ? el.previousElementSibling : el.nextElementSibling;
+    if (!sibling) return;
+    if (delta < 0) el.parentNode.insertBefore(el, sibling);
+    else el.parentNode.insertBefore(sibling, el);
+}
+
+function removeSection(sectionId) {
+    document.getElementById(sectionId).remove();
+    Object.keys(quillInstances).forEach(k => { if (k.startsWith(sectionId)) delete quillInstances[k]; });
+    refreshSectionHeaders();
+}
+
+function moveSection(sectionId, delta) {
+    const el = document.getElementById(sectionId);
+    const sibling = delta < 0 ? el.previousElementSibling : el.nextElementSibling;
+    if (!sibling) return;
+    if (delta < 0) el.parentNode.insertBefore(el, sibling);
+    else el.parentNode.insertBefore(sibling, el);
+    refreshSectionHeaders();
+}
+
+function refreshSectionHeaders() {
+    const sections = Array.from(document.getElementById('sections-container').children);
+    sections.forEach((section, i) => {
+        const meta = SECTION_META[section.dataset.type];
+        section.querySelector('.section-header h2').innerHTML =
+            `${i + 1}. ${meta.name} <span class="section-badge ${meta.badge}">${meta.bg}</span>`;
+        const [up, down] = section.querySelectorAll('.section-controls .icon');
+        up.disabled = i === 0;
+        down.disabled = i === sections.length - 1;
+    });
+}
+
+/* ============================================================
+   Reading the form
+   ============================================================ */
+
+function readTags(prefix, opts) {
+    const o = opts || {};
+    const tags = [];
+
+    if (o.date !== false) {
+        const dateEl = document.getElementById(`${prefix}-date`);
+        const dateVal = dateEl ? dateEl.value.trim() : '';
+        if (dateVal) tags.push({ entity: clockFor(dateVal), text: dateVal });
+    }
+
+    const modeEl = document.getElementById(`${prefix}-mode`);
+    const modeTextEl = document.getElementById(`${prefix}-mode-text`);
+    const modeText = modeTextEl ? modeTextEl.value.trim() : '';
+    if (modeText) tags.push({ entity: MODES[modeEl.value].entity, text: modeText });
+
+    const creditEl = document.getElementById(`${prefix}-credit`);
+    const credit = creditEl ? creditEl.value.trim() : '';
+    if (credit) tags.push({ entity: ENT.trophy, text: credit });
+
+    return tags;
+}
+
+function readSection(section, usedSlugs) {
+    const id = section.id;
+    const type = section.dataset.type;
+    const heading = (document.getElementById(`${id}-heading`).value || '').trim();
+    const inToc = document.getElementById(`${id}-toc`).checked && !!heading;
+    const anchor = slugify(heading, usedSlugs);
+
+    const data = { type, heading, anchor, inToc };
+
+    if (type === 'text' || type === 'highlight') {
+        data.tagsOn = document.getElementById(`${id}-tags-on`).checked;
+        data.tags = data.tagsOn ? readTags(id, { mode: true }) : [];
+        data.bodyHTML = quillInstances[`${id}-body`].root.innerHTML;
+        data.buttonLabel = document.getElementById(`${id}-btn-label`).value.trim();
+        data.buttonUrl = document.getElementById(`${id}-btn-url`).value.trim();
+    } else {
+        data.introHTML = quillInstances[`${id}-intro`].root.innerHTML;
+        data.items = Array.from(document.querySelectorAll(`#${id}-items .pd-item`)).map(item => {
+            const iid = item.id;
+            return {
+                title: document.getElementById(`${iid}-title`).value.trim(),
+                url: document.getElementById(`${iid}-url`).value.trim(),
+                tags: readTags(iid, { date: type === 'live' ? true : false }),
+                summaryHTML: quillInstances[`${iid}-summary`].root.innerHTML,
+                buttonLabel: document.getElementById(`${iid}-btn-label`).value.trim()
+            };
         });
-        openingBodyQuill.root.innerHTML = '<p>Questions? <a href="https://dcccd.sharepoint.com/sites/CETL/SitePages/Contact-Us.aspx">Contact the Center for Excellence in Teaching and Learning.</a></p>';
-        
-        let sectionCounter = 0;
-        let quillInstances = {};
-        
-        function getBackgroundColor(index) { return index % 2 === 1 ? '#eff6fc' : '#ffffff'; }
-        function getBadgeClass(index) { return index % 2 === 1 ? 'badge-blue' : 'badge-white'; }
-        
-        function addSection(type) {
-            sectionCounter++;
-            const container = document.getElementById('sections-container');
-            const sectionIndex = container.children.length + 1;
-            const bgColor = getBackgroundColor(sectionIndex);
-            const badgeClass = getBadgeClass(sectionIndex);
-            const bgLabel = bgColor === '#eff6fc' ? 'Blue' : 'White';
-            const sectionId = `section-${sectionCounter}`;
-            const sectionDiv = document.createElement('div');
-            sectionDiv.className = 'form-section';
-            sectionDiv.id = sectionId;
-            sectionDiv.dataset.type = type;
-            sectionDiv.dataset.bgColor = bgColor;
-            
-            let html = `<div class="section-header"><h2>Section ${sectionIndex} <span class="section-badge ${badgeClass}">${bgLabel} Background</span></h2><button class="danger" onclick="removeSection('${sectionId}')">🗑️ Remove</button></div>`;
-            
-            if (type === 'two-column') {
-                html += `<div class="form-group"><label>Heading</label><input type="text" id="${sectionId}-heading" placeholder="Section heading"></div><div class="form-group"><label>Body Copy</label><div id="${sectionId}-body" class="quill-editor"></div></div><div class="form-group"><label>Link URL</label><input type="url" id="${sectionId}-link" placeholder="https://..."></div><div class="form-group"><label>Image Base64 Data</label><textarea id="${sectionId}-image" placeholder="data:image/webp;base64,..."></textarea></div>`;
-            } else if (type === 'full-simple') {
-                html += `<div class="form-group"><label>Heading</label><input type="text" id="${sectionId}-heading" placeholder="Section heading"></div><div class="form-group"><label>Body Copy</label><div id="${sectionId}-body" class="quill-editor"></div></div>`;
-            } else if (type === 'full-pd') {
-                html += `<div class="form-group"><label>Heading</label><input type="text" id="${sectionId}-heading" placeholder="Quick PD: Watch Anytime"></div><div class="form-group"><label>Intro Text</label><div id="${sectionId}-intro" class="quill-editor"></div></div><div id="${sectionId}-pd-items"></div><button class="secondary" onclick="addPDItem('${sectionId}')">➕ Add PD Link</button><div class="form-group" style="margin-top: 20px;"><label>Tip (appears at end of list)</label><div id="${sectionId}-tip" class="quill-editor"></div></div>`;
-            } else if (type === 'live-events') {
-                html += `<div class="form-group"><label>Heading</label><input type="text" id="${sectionId}-heading" placeholder="Earn Credit for Upcoming Live Webinars"></div><div class="form-group"><label>Intro Text</label><div id="${sectionId}-intro" class="quill-editor"></div></div><div id="${sectionId}-live-items"></div><button class="secondary" onclick="addLiveEventItem('${sectionId}')">➕ Add Live Event</button>`;
-            } else if (type === 'heading-bar') {
-                html += `<div class="form-group"><label>Heading</label><input type="text" id="${sectionId}-heading" placeholder="Your Heading Here"></div>`;
-            }
-            
-            sectionDiv.innerHTML = html;
-            container.appendChild(sectionDiv);
-            
-            const toolbarConfig = { toolbar: [['bold', 'italic'], ['link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }]] };
-            
-            if (type === 'two-column' || type === 'full-simple') {
-                quillInstances[`${sectionId}-body`] = new Quill(`#${sectionId}-body`, { theme: 'snow', modules: toolbarConfig });
-            } else if (type === 'full-pd') {
-                quillInstances[`${sectionId}-intro`] = new Quill(`#${sectionId}-intro`, { theme: 'snow', modules: toolbarConfig });
-                quillInstances[`${sectionId}-tip`] = new Quill(`#${sectionId}-tip`, { theme: 'snow', placeholder: '✅ Tip: Bookmark any interesting links so you can jump in when you have a few minutes!', modules: toolbarConfig });
-            } else if (type === 'live-events') {
-                quillInstances[`${sectionId}-intro`] = new Quill(`#${sectionId}-intro`, { theme: 'snow', modules: toolbarConfig });
-            }
-            
-            updateSectionNumbers();
-        }
-        
-        let pdItemCounter = 0;
-        function addPDItem(sectionId) {
-            pdItemCounter++;
-            const itemId = `${sectionId}-pd-${pdItemCounter}`;
-            const container = document.getElementById(`${sectionId}-pd-items`);
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'pd-item';
-            itemDiv.id = itemId;
-            itemDiv.innerHTML = `<div class="pd-item-header"><strong>PD Item</strong><button class="danger" style="padding: 6px 12px; font-size: 12px;" onclick="removePDItem('${itemId}')">Remove</button></div><div class="form-group"><label>Title</label><input type="text" id="${itemId}-title" placeholder="Designing an AI Ethics Module"></div><div class="form-group"><label>Link URL</label><input type="url" id="${itemId}-link" placeholder="https://..."></div><div class="form-group"><label>Duration</label><input type="text" id="${itemId}-duration" placeholder="9 minutes"></div><div class="form-group"><label>Summary</label><div id="${itemId}-summary" class="quill-editor"></div></div>`;
-            container.appendChild(itemDiv);
-            quillInstances[`${itemId}-summary`] = new Quill(`#${itemId}-summary`, { theme: 'snow', modules: { toolbar: [['bold', 'italic'], ['link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }]] } });
-        }
-        
-        function removePDItem(itemId) { document.getElementById(itemId).remove(); delete quillInstances[`${itemId}-summary`]; }
-        
-        let liveEventCounter = 0;
-        function addLiveEventItem(sectionId) {
-            liveEventCounter++;
-            const itemId = `${sectionId}-live-${liveEventCounter}`;
-            const container = document.getElementById(`${sectionId}-live-items`);
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'pd-item';
-            itemDiv.id = itemId;
-            itemDiv.innerHTML = `<div class="pd-item-header"><strong>Live Event</strong><button class="danger" style="padding: 6px 12px; font-size: 12px;" onclick="removeLiveEventItem('${itemId}')">Remove</button></div><div class="form-group"><label>Title</label><input type="text" id="${itemId}-title" placeholder="Using AI for Writing Instruction"></div><div class="form-group"><label>Link URL (leave blank if multiple offerings)</label><input type="url" id="${itemId}-link" placeholder="https://..."></div><div class="form-group"><label>Date/Time</label><input type="text" id="${itemId}-datetime" placeholder="April 29, 2–3 PM"></div><div class="form-group"><label>Summary</label><div id="${itemId}-summary" class="quill-editor"></div></div>`;
-            container.appendChild(itemDiv);
-            quillInstances[`${itemId}-summary`] = new Quill(`#${itemId}-summary`, { theme: 'snow', modules: { toolbar: [['bold', 'italic'], ['link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }]] } });
-        }
-        
-        function removeLiveEventItem(itemId) { document.getElementById(itemId).remove(); delete quillInstances[`${itemId}-summary`]; }
-        
-        function removeSection(sectionId) {
-            document.getElementById(sectionId).remove();
-            Object.keys(quillInstances).forEach(key => { if (key.startsWith(sectionId)) delete quillInstances[key]; });
-            updateSectionNumbers();
-        }
-        
-        function updateSectionNumbers() {
-            const sections = document.getElementById('sections-container').children;
-            Array.from(sections).forEach((section, index) => {
-                const sectionIndex = index + 1;
-                const bgColor = getBackgroundColor(sectionIndex);
-                const badgeClass = getBadgeClass(sectionIndex);
-                const bgLabel = bgColor === '#eff6fc' ? 'Blue' : 'White';
-                section.dataset.bgColor = bgColor;
-                const header = section.querySelector('h2');
-                header.innerHTML = `Section ${sectionIndex} <span class="section-badge ${badgeClass}">${bgLabel} Background</span>`;
-            });
-        }
-        
-        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-        
-        function removeWordArtifacts(html) {
-            return html
-                .replace(/\u200B/g, '')
-                .replace(/\uFEFF/g, '')
-                .replace(/\u200C/g, '')
-                .replace(/\u200D/g, '')
-                .replace(/\u00AD/g, '')
-                .replace(/&ZeroWidthSpace;/g, '')
-                .replace(/&#8203;/g, '')
-                .replace(/&#x200B;/g, '');
-        }
+    }
 
-        function isQuillEmpty(html) {
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            return temp.textContent.trim() === '' && !temp.querySelector('img');
-        }
+    return data;
+}
 
-        // lastMargin: what to put on the final element's margin shorthand.
-        // Use '0' for normal body copy; '0 0 20px 0' for intro text fields.
-        function styleQuillHTML(html, lastMargin = '0') {
-            if (isQuillEmpty(html)) return '';
-            html = removeWordArtifacts(html);
-            html = html.replace(/&nbsp;/g, ' ');
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            const spans = temp.querySelectorAll('span');
-            spans.forEach(span => { const parent = span.parentNode; while (span.firstChild) parent.insertBefore(span.firstChild, span); parent.removeChild(span); });
-            temp.querySelectorAll('p').forEach(p => p.setAttribute('style', "margin: 0 0 15px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"));
-            temp.querySelectorAll('a').forEach(a => a.setAttribute('style', 'color: #0078d4; text-decoration: underline;'));
-            temp.querySelectorAll('ol').forEach(ol => ol.setAttribute('style', "margin: 0; padding-left: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"));
-            temp.querySelectorAll('ul').forEach(ul => ul.setAttribute('style', "margin: 0; padding-left: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"));
-            temp.querySelectorAll('li').forEach(li => li.setAttribute('style', 'margin: 0 0 10px 0;'));
-            const allElements = temp.querySelectorAll('p, li, ul, ol');
-            if (allElements.length > 0) {
-                const last = allElements[allElements.length - 1];
-                last.setAttribute('style', (last.getAttribute('style') || '').replace(/margin:\s*[^;]+;?/, `margin: ${lastMargin};`));
-            }
-            return temp.innerHTML;
-        }
+/* ============================================================
+   Section rendering
+   ============================================================ */
 
-        // isLastEvent: when true, the final element gets margin: 0 (no trailing gap after the section's last item)
-        function styleSummaryQuillHTML(html, isLastEvent = false) {
-            if (isQuillEmpty(html)) return '';
-            html = removeWordArtifacts(html);
-            html = html.replace(/&nbsp;/g, ' ');
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            const spans = temp.querySelectorAll('span');
-            spans.forEach(span => { const parent = span.parentNode; while (span.firstChild) parent.insertBefore(span.firstChild, span); parent.removeChild(span); });
+function sectionComment(index, heading) {
+    return `<!-- Section ${index}: ${stripEmoji(heading).replace(/--+/g, '-')} -->`;
+}
 
-            // Style <ul> and <li>
-            temp.querySelectorAll('ul').forEach(ul => ul.setAttribute('style', "margin: 0 0 30px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"));
-            temp.querySelectorAll('li').forEach(li => li.setAttribute('style', 'margin: 0 0 5px 0;'));
+function renderTextSection(s, index) {
+    const tags = buildTagRow(s.tags, s.buttonUrl);
+    const button = buildButton(s.buttonLabel, s.buttonUrl, s.heading);
+    const body = styleQuillHTML(s.bodyHTML, button ? '0 0 20px 0' : '0');
+    const headingHTML = s.heading
+        ? `<h2 class="cetl-h2" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 24px; font-weight: bold; color: #323130; margin: 0 0 10px 0; line-height: 32px;">${safeText(s.heading)}</h2>`
+        : '';
+    const parts = [headingHTML, tags, body, button].filter(Boolean);
 
-            // Style <p> — if immediately followed by a <ul>, use tighter margin
-            temp.querySelectorAll('p').forEach(p => {
-                const next = p.nextElementSibling;
-                const margin = (next && next.tagName === 'UL') ? '0 0 5px 0' : '0 0 15px 0';
-                p.setAttribute('style', `margin: ${margin}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;`);
-            });
+    return `
+                ${sectionComment(index, s.heading)}
+                <tr>
+                    <td bgcolor="#ffffff" class="cetl-pad" style="background-color: #ffffff; padding: 36px 24px;">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
+                            <tr>
+                                <td id="${s.anchor}" bgcolor="#ffffff" class="cetl-card-pad" style="padding: 24px; border: 3px solid #dbdbdb;">
+${parts.map(p => indent(p, 36)).join('\n')}
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+`;
+}
 
-            temp.querySelectorAll('a').forEach(a => a.setAttribute('style', 'color: #0078d4; text-decoration: underline;'));
+function renderHighlightSection(s, index) {
+    const tags = buildTagRow(s.tags, s.buttonUrl);
+    const button = buildButton(s.buttonLabel, s.buttonUrl, s.heading);
+    const body = styleQuillHTML(s.bodyHTML, '0');
+    const parts = [tags, body].filter(Boolean);
 
-            // Apply trailing margin to the last top-level child
-            const children = Array.from(temp.children);
-            if (children.length > 0) {
-                const last = children[children.length - 1];
-                const trailingMargin = isLastEvent ? '0' : '0 0 20px 0';
-                last.setAttribute('style', (last.getAttribute('style') || '').replace(/margin:\s*[^;]+;?/, `margin: ${trailingMargin};`));
-            }
-            return temp.innerHTML;
-        }
-        
-        function generateHTML() {
-            const browserUrl = document.getElementById('browser-url').value;
-            const openingHeading = document.getElementById('opening-heading').value.trim();
-            const openingBody = styleQuillHTML(openingBodyQuill.root.innerHTML);
-            const openingHeadingHTML = openingHeading ? `<h1 style="margin: 0 0 15px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 24px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(openingHeading)}</h1>` : '';
-            
-            let emailHTML = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    let html = `
+                ${sectionComment(index, s.heading)}
+`;
+    html += buildNavyBar(s.heading, s.anchor, '15px 24px');
+    html += `                <tr>
+                    <td bgcolor="#eff6fc" class="cetl-pad" style="background-color: #eff6fc; padding: ${button ? '24px 24px 0 24px' : '24px'};">
+${parts.map(p => indent(p, 24)).join('\n')}
+                    </td>
+                </tr>
+`;
+    if (button) {
+        html += `                <tr>
+                    <td bgcolor="#eff6fc" class="cetl-pad" style="background-color: #eff6fc; padding: 24px;">
+${indent(button, 24)}
+                    </td>
+                </tr>
+`;
+    }
+    html += NAVY_RULE;
+    return html;
+}
+
+function renderWebinarSection(s, index) {
+    const intro = styleQuillHTML(s.introHTML, '0 0 25px 0');
+    const cards = s.items.map(buildCard);
+
+    let html = `
+                ${sectionComment(index, s.heading)}
+`;
+    html += buildNavyBar(s.heading, s.anchor, '20px 24px');
+    html += `                <tr>
+                    <td bgcolor="#ffffff" class="cetl-pad" style="background-color: #ffffff; padding: 20px 24px 36px 24px;">
+${intro ? indent(intro, 24) + '\n' : ''}                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
+${cards.join(CARD_SPACER)}                        </table>
+                    </td>
+                </tr>
+`;
+    return html;
+}
+
+/* ============================================================
+   Generate
+   ============================================================ */
+
+function generateHTML() {
+    const browserUrl = escapeAttr(document.getElementById('browser-url').value.trim());
+    const openingHeading = document.getElementById('opening-heading').value.trim();
+    const openingBody = styleQuillHTML(openingBodyQuill.root.innerHTML, '0 0 20px 0');
+    const includeToc = document.getElementById('include-toc').checked;
+
+    const usedSlugs = new Set();
+    const sections = Array.from(document.getElementById('sections-container').children)
+        .map(el => readSection(el, usedSlugs));
+
+    const openingHeadingHTML = openingHeading
+        ? `<h1 class="cetl-h1" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 28px; font-weight: bold; color: #323130; margin: 0 0 10px 0; line-height: 38px;">${safeText(openingHeading)}</h1>`
+        : '';
+
+    const contactHTML = `<p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; color: #323130; margin: 0 0 30px 0; line-height: 24px;">Questions? <a href="https://dcccd.sharepoint.com/sites/CETL/SitePages/Contact-Us.aspx" style="color: #0078d4;">Contact CETL.</a></p>`;
+
+    const tocItems = sections.filter(s => s.inToc);
+    let tocHTML = '';
+    if (includeToc && tocItems.length) {
+        const links = tocItems.map(s => {
+            const label = plainText(s.heading);
+            return `<p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 16px; color: #323130; margin: 0; line-height: 24px;"><!--[if !mso]><!--><a href="#${s.anchor}" style="color: #0078d4; display: block; padding: 6px 0;">${label}</a><!--<![endif]--><!--[if mso]><span style="color: #323130;">${label}</span><![endif]--></p>`;
+        }).join('\n');
+
+        tocHTML = `
+                <!-- In This Email -->
+                <tr>
+                    <td bgcolor="#ffffff" class="cetl-pad" style="background-color: #ffffff; padding: 0 24px 10px 24px;">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
+                            <tr>
+                                <td style="padding: 24px 0; border-top: 3px solid #dbdbdb; border-bottom: 3px solid #dbdbdb;">
+                                    <p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 20px; font-weight: bold; color: #323130; margin: 0 0 10px 0; line-height: 27px;">In This Email</p>
+${indent(links, 36)}
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+`;
+    }
+
+    let sectionsHTML = '';
+    sections.forEach((s, i) => {
+        if (s.type === 'text') sectionsHTML += renderTextSection(s, i + 1);
+        else if (s.type === 'highlight') sectionsHTML += renderHighlightSection(s, i + 1);
+        else sectionsHTML += renderWebinarSection(s, i + 1);
+    });
+
+    const emailHTML = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light only" />
+    <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no" />
     <title>Faculty Newsletter</title>
     <style type="text/css">
         body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -317,201 +948,128 @@
         .ReadMsgBody { width: 100%; }
         .ExternalClass { width: 100%; }
         .ExternalClass * { line-height: 100%; }
+        /* Stop iOS from auto-linking dates and turning them blue */
+        a[x-apple-data-detectors] {
+            color: inherit !important; text-decoration: none !important; font-size: inherit !important;
+            font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important;
+        }
+        /* Footer logo hover */
+        img.cetl-logo-img:hover,
+        .cetl-logo-cell img:hover,
+        a.cetl-logo-link:hover img,
+        td.cetl-logo-cell a.cetl-logo-link:hover img,
+        [data-ogsc] img.cetl-logo-img:hover,
+        [data-ogsb] img.cetl-logo-img:hover {
+            background: none !important;
+            background-color: transparent !important;
+            opacity: 1 !important;
+        }
+
+        /* DARK MODE */
+        @media (prefers-color-scheme: dark) {
+            .cetl-navy, td.cetl-navy { background-color: #002F87 !important; }
+            .cetl-navy h2, .cetl-navy p, .cetl-navy a { color: #ffffff !important; }
+            .cetl-tag-cell, td.cetl-tag-cell { background-color: #f4f4f4 !important; }
+            .cetl-tag-cell a, .cetl-tag-cell p { color: #323130 !important; }
+        }
+        [data-ogsc] .cetl-navy, [data-ogsb] .cetl-navy { background-color: #002F87 !important; }
+        [data-ogsc] .cetl-navy h2, [data-ogsc] .cetl-navy p, [data-ogsc] .cetl-navy a,
+        [data-ogsb] .cetl-navy h2, [data-ogsb] .cetl-navy p, [data-ogsb] .cetl-navy a { color: #ffffff !important; }
+        [data-ogsc] .cetl-tag-cell, [data-ogsb] .cetl-tag-cell { background-color: #f4f4f4 !important; border: 3px solid #dbdbdb !important; }
+        [data-ogsc] .cetl-tag-cell a, [data-ogsb] .cetl-tag-cell a,
+        [data-ogsc] .cetl-tag-cell p, [data-ogsb] .cetl-tag-cell p { color: #323130 !important; }
         @media only screen and (max-width: 600px) {
-            .cetl-email-container { width: 100% !important; }
-            .cetl-mobile-stack { display: block !important; width: 100% !important; }
-            .cetl-mobile-hide { display: none !important; }
-            .cetl-mobile-center { text-align: center !important; }
-            .cetl-mobile-padding { padding: 0px !important; }
-            .cetl-mobile-img { width: 100% !important; max-width: 250px !important; height: auto !important; }
-            tr.cetl-mobile-stack { display: table-row !important; }
-            tr.cetl-mobile-stack[style*="display: none"] { display: table-row !important; }
-            .cetl-mobile-center[width="0"] { width: auto !important; height: auto !important; padding: 0 0 20px 0 !important; overflow: visible !important; font-size: 16px !important; line-height: 1.6 !important;}
-            .cetl-mobile-img-link { max-width: none !important; max-height: none !important; overflow: visible !important; }
+            .cetl-container { width: 100% !important; }
+            .cetl-pad { padding-left: 16px !important; padding-right: 16px !important; }
+            .cetl-card-pad { padding: 16px !important; }
+            .cetl-banner-title { font-size: 26px !important; }
+            .cetl-banner-sub { font-size: 16px !important; }
+            .cetl-h1 { font-size: 24px !important; line-height: 32px !important; }
+            .cetl-h2 { font-size: 22px !important; line-height: 30px !important; }
+            .cetl-btn-link { padding: 12px 18px !important; }
         }
     </style>
     <!--[if mso]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:AllowPNG/>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+    </xml>
     <style type="text/css">
-        body, table, td { font-family: 'Segoe UI', Tahoma, Arial, sans-serif !important; }
+        body, table, td, p, h1, h2, h3, a { font-family: 'Segoe UI', Tahoma, Arial, sans-serif !important; }
     </style>
     <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
-        <tr>
-            <td style="padding: 20px 0;">
-                <!-- View in Browser -->
-                <table role="presentation" class="cetl-email-container" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="margin: 0 auto; max-width: 600px; width: 100%;">
-                    <tr>
-                        <td style="padding: 0px 20px 20px 20px; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #323130;">
-                            <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #323130; line-height: 1.6;">Having trouble viewing this email? <a href="${browserUrl}" style="color: #0078d4; text-decoration: underline;">View it in your browser.</a></p>
-                        </td>
-                    </tr>
-                </table>
-                <!-- Email Container -->
-                <table role="presentation" class="cetl-email-container" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="margin: 0 auto; max-width: 600px; width: 100%; background-color: #ffffff;">
-                    <!-- Opening Section -->
-                    <tr>
-                        <td style="background-color: #ffffff; padding: 40px 40px 40px 40px;">
-                            ${openingHeadingHTML}
-                            ${openingBody}
-                        </td>
-                    </tr>
-`;
-            
-            const sections = document.getElementById('sections-container').children;
-            Array.from(sections).forEach((section, index) => {
-                const sectionId = section.id;
-                const type = section.dataset.type;
-                const bgColor = section.dataset.bgColor;
-                
-                if (type === 'two-column') {
-                    const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const body = styleQuillHTML(quillInstances[`${sectionId}-body`].root.innerHTML);
-                    const link = document.getElementById(`${sectionId}-link`).value.trim();
-                    const image = document.getElementById(`${sectionId}-image`).value;
-                    const linkWithQuery = link ? (link + (link.includes('?') ? '&' : '?') + 'source=image') : '';
-                    const mobileImage = link ? `<a href="${linkWithQuery}" class="cetl-mobile-img-link" style="display: block; text-decoration: none; border: 0; max-width: 0; max-height: 0; overflow: hidden;" aria-hidden="true" tabindex="-1"><img alt="" class="cetl-mobile-img" style="width: 100%; max-width: 200px; height: auto; display: block; margin: 0 0 10px 0; border: 0;" src="${image}"></a>` : `<img alt="" class="cetl-mobile-img" style="width: 100%; max-width: 200px; height: auto; display: block; margin: 0 0 10px 0; border: 0;" src="${image}">`;
-                    const desktopImage = link ? `<a href="${linkWithQuery}" style="display: block; text-decoration: none; border: 0;" aria-hidden="true" tabindex="-1"><img alt="" style="width: 100%; max-width: 200px; height: auto; display: block; margin: 0 auto; border: 0;" src="${image}"></a>` : `<img alt="" style="width: 100%; max-width: 200px; height: auto; display: block; margin: 0 auto; border: 0;" src="${image}">`;
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 10px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
-                    emailHTML += `
-                    <!-- Section ${index + 1}: Two Column -->
-                    <tr>
-                        <td style="background-color: ${bgColor}; padding: 40px 40px 40px 40px;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr class="cetl-mobile-stack" style="display: none;">
-                                    <td colspan="2" class="cetl-mobile-center" width="0" height="0" style="padding: 0; overflow: hidden; font-size: 0; line-height: 0;">
-                                        ${mobileImage}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="cetl-mobile-stack cetl-mobile-padding" style="width: 60%; vertical-align: top; padding-right: 20px;">
-                                        ${headingHTML}
-                                        ${body}
-                                    </td>
-                                    <td class="cetl-mobile-stack cetl-mobile-center cetl-mobile-hide" style="width: 40%; vertical-align: top;">
-                                        ${desktopImage}
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-`;
-                } else if (type === 'full-simple') {
-                    const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const body = styleQuillHTML(quillInstances[`${sectionId}-body`].root.innerHTML);
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 10px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
-                    emailHTML += `
-                    <!-- Section ${index + 1}: Full Width Simple -->
-                    <tr>
-                        <td style="background-color: ${bgColor}; padding: 40px 40px 40px 40px;">
-                            ${headingHTML}
-                            ${body}
-                        </td>
-                    </tr>
-`;
-                } else if (type === 'full-pd') {
-                    const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML, '0 0 20px 0');
-                    let pdHTML = '';
-                    const pdItems = document.querySelectorAll(`#${sectionId}-pd-items .pd-item`);
-                    pdItems.forEach((item, pdIdx) => {
-                        const itemId = item.id;
-                        const title = document.getElementById(`${itemId}-title`).value;
-                        const itemLink = document.getElementById(`${itemId}-link`).value;
-                        const duration = document.getElementById(`${itemId}-duration`).value.trim();
-                        const isLastItem = pdIdx === pdItems.length - 1;
-                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML, isLastItem);
-                        pdHTML += `
-                            <p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">▶️ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a></strong></p>
-                            ${duration ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><em>${escapeHtml(duration)}</em></p>` : ''}
-                            ${summary}
-`;
-                    });
-                    const tip = styleQuillHTML(quillInstances[`${sectionId}-tip`].root.innerHTML);
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 ${intro ? '10px' : '20px'} 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
-                    emailHTML += `
-                    <!-- Section ${index + 1}: PD List -->
-                    <tr>
-                        <td style="background-color: ${bgColor}; padding: 40px 40px 40px 40px;">
-                            ${headingHTML}
-                            ${intro}
-                            ${pdHTML}
-                            ${tip}
-                        </td>
-                    </tr>
-`;
-                } else if (type === 'live-events') {
-                    const heading = document.getElementById(`${sectionId}-heading`).value.trim();
-                    const intro = styleQuillHTML(quillInstances[`${sectionId}-intro`].root.innerHTML, '0 0 20px 0');
-                    let liveHTML = '';
-                    const liveItems = document.querySelectorAll(`#${sectionId}-live-items .pd-item`);
-                    liveItems.forEach((item, liveIdx) => {
-                        const itemId = item.id;
-                        const title = document.getElementById(`${itemId}-title`).value;
-                        const itemLink = document.getElementById(`${itemId}-link`).value.trim();
-                        const datetime = document.getElementById(`${itemId}-datetime`).value.trim();
-                        const isLastItem = liveIdx === liveItems.length - 1;
-                        const summary = styleSummaryQuillHTML(quillInstances[`${itemId}-summary`].root.innerHTML, isLastItem);
-                        const titleHTML = itemLink
-                            ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;"><a href="${itemLink}" style="color: #0078d4; text-decoration: none;" aria-hidden="true" tabindex="-1">⭐ </a><strong><a href="${itemLink}" style="color: #0078d4; text-decoration: underline;">${escapeHtml(title)}</a></strong></p>`
-                            : `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;">⭐ <strong>${escapeHtml(title)}</strong></p>`;
-                        liveHTML += `
-                            ${titleHTML}
-                            ${datetime ? `<p style="margin: 0 0 5px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 16px; color: #323130; line-height: 1.6;">${itemLink ? `<a href="${itemLink}" style="color: #323130; text-decoration: none;" aria-hidden="true" tabindex="-1"><em>${escapeHtml(datetime)}</em></a>` : `<em>${escapeHtml(datetime)}</em>`}</p>` : ''}
-                            ${summary}
-`;
-                    });
-                    const headingHTML = heading ? `<h2 style="margin: 0 0 ${intro ? '10px' : '20px'} 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 20px; font-weight: bold; color: #323130; line-height: 1.4;">${escapeHtml(heading)}</h2>` : '';
-                    emailHTML += `
-                    <!-- Section ${index + 1}: Live Events -->
-                    <tr>
-                        <td style="background-color: ${bgColor}; padding: 40px 40px 40px 40px;">
-                            ${headingHTML}
-                            ${intro}
-                            ${liveHTML}
-                        </td>
-                    </tr>
-`;
-                } else if (type === 'heading-bar') {
-                    const heading = document.getElementById(`${sectionId}-heading`).value;
-                    emailHTML += `
-                    <!-- Section ${index + 1}: Heading Bar -->
-                    <tr>
-                        <td style="background-color: #002f87; padding: 20px 40px 20px 40px;">
-                            <h1 style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 24px; font-weight: bold; color: #ffffff; line-height: 1.4;">${escapeHtml(heading)}</h1>
-                        </td>
-                    </tr>
-`;
-                }
-            });
-            
-            emailHTML += `
-                    <!-- Footer -->
-                    <tr>
-                        <td style="background-color: #ffffff; padding: 0px; text-align: left;">
-                            <a href="https://www.dallascollege.edu/" style="display: block; text-decoration: none; border: 0;">
-                                <img alt="Dallas College" style="width: 200px; height: auto; display: block; margin: 40px 0px 20px 40px; border: 0;" src="data:image/webp;base64,UklGRvwOAABXRUJQVlA4WAoAAAAUAAAAxwAAMwAAQUxQSNIIAAAB8IZt2zK12f7tGeLuAYIEiV+DUxfi3EuMqTfuVm/cPXV3haLVCFUCF3Y37u6Cxh1uJkKOD9dxylyT5f4cERPQOtJp6Izo7t8QHnV0izT4CKMd1H1jDcOICYZsQIxhGFFdIBkUaxhGdDg0hkYbhhHbEdKOPotT1/z205uuJvDkZNJdU74p9eVofU3PkWT1vs/vU9lK1vPNZVLJespH4jey7tXQ/hJZt0hNqCRh1RxPTNLGl3wcqanJGRnrv92kEogfr3ZSbY+GqcQnSPxK0uu9hoi2JmppXKlC9KJMsqBIJoU57rDBBkGy6CNSzPQioq2GLeg1kd81Ad3vBQ+TsNqP607Kj3sT0UpbUKLgFRJ/7gWfi2gm9xJ3p3C9m3vbu2hbG02Hstau2Ss67OC2S1xsY7uWlyT2cT8wtQ8D8W5mu5dRRRc90wGgSx5H45lHSXaa7SaQ7H+YdUx5EwArbx86dOjKOm+jGz20zLEAKVwu863l7u5qyybb5VuqdjCZTDJDOU543D5U0UHHPK5ZBXOtFYAO1yxXI/Za6FGbRZN1w31VFneAZQpHdDL1+eb3CCrwAN5kKAHANLLm4Wvma5t9wLyPQgvNsPjfEFg3jLw30HIPPM09CWALMxEDmCsdbNWkgumNl5g9FkyUIjoVdU+gGH29uSTgMbJe9YXPEQu9bKuRZD0ABLgtNMCC4TeliO63y7qvUlNTU5N/2XFTy5/6pnJDgM+YNAArmG22ymXmA8hiMhm0WXRUaq/DHrXBELZ6KkcD9dH2E+dE8wvMM2iOhxjqZ6MoYh9EC4xm3CEMgK7TMioE5LIH9RABiNmvtlbXfcSW18VYstZWnj1/vszNZNnobcZdcuH82UqG5omsfU9x73gBkKxU20VlOhNewSUDBYz8rUCZo1DaJtWohJE/AMcP61evXr11OgDEcl96Bb5RoddV3nEEBT7w4W3iH0M86ZwlUxLaLiQkJCQ0rL7gUKBfSEhISFiwA3iedCbgOFkv+gIYyn1mM5/6DHaqFKgopgAfa9krIxklEF9pC6zX8iOyGTr8TPyCau5Vmz39Mpegcs3fA8ebo1k5U1vjttbcYai/Ha62g0HsrRq3taaWqa3zFCcdabNvj3NYq0C99V3qDIwl9nW0seIpLs0OV9pgOedCGyvmMTQTB5WyYLMT5M89p/Kyto1tAeQz7lDwDU8yNQF2aIATzAkIA28zJ2GolLfXNkXF4GKJxnO+1Qo/cC0vKxwbBgAPE7sG4k8YegvI9NRVPEnsRyL8ydAExFVKbfGD9oHbik3JjYWB6L1q9LD+3xNtGfj8sCWjgZRdpuyJBVzDn7ebfEFB+pxYsONP5Zlm/uEBErE7Ck0z70AKMPugKVu8KRxLj5qyW1fj9WO5plm8NU7iyf0Fppl3fAXgmLr7LuPOS4KdQ/eQ5PX+sHMdB3T7OOD5Og7odjgAwK/fE0OSHm0Ju88UpTjwf37Xk5Y7g/H/f47lXGNbdBrgShrY3UdLh8eThgx93P9eUdc5KMmVGO7wxMBtxabkxsJgSxeiaxeIRjEpu0zZEwvkgt8+Qmz5l91UfOdtv0PWO7sW+4pGHsg3zc1/t5eYdNI0zZ3pMi8dMmULdzgF96dUEnvyy0jRlCOmbPG2gVNI0bDMoMqujo30k8X/fySfLFP/E5JObyRT932Sf78Bt4Ksd8Ml3iLrCZmvSPFRJiCXpLP9uA9IccoklR6WiuJ6AN6mMADDSHGaRNAJUiztJgo5TqolXZmFTE2QJz7RknibFG8NYN5VmaSlx3iwz/YF8IdKgij4LClfDed6XCb1GqcXDSKNT9imTh0OdYBEUrzqJ6i3hzRuYxoeIZ2nmntNeI2O2z10TNUiv08lD8JlJDyVlbpbQLMtH5PwwpqU1ecF9KWtLucVFhUVFf27JwJYS8J9mZkHBJQjccUsKCoqKtq4a7CnMkj1dYH/da7qGQCIP8ZVNgO63OHcL8E6roq7281Of0KyD/E7IgEgYjNHiaJciD30I6neDhe8RuyN7mAbHmDoOWApse5Y8F2uMrTSS77n/oHwVy5NlGePuIOk/AuEJjcWwge5dcAGbizEI7gNdsqRqHeKqQoUddhSsn///nN/i/K11QaLmg7NIY19BI3OMSU+Ioz/aOnSpZ9MQYfrzBEfCRxkqjvaqOZ0SWlpaSk9ia7EpkMn5z5dUlpaWlb7vBKt+yo1NTU1OWtjNen8HcKexKZBYwyx30P2O4acNhKPwkButKW9s2vXrt2COgYEBAQENxCIJ6t59o4hiuaWe2C21Bzuca8YwiVaPibp+5Um2msBlN7xwLtSb3LxXpHEPWX5ROpumFflQrJjNfNfmaeXT58+ffF4dOLypP7iunvFw9xCy6dSlxsqTbbT6VYyOMqQIfK7RlYTOMxQpES3u8zxejba3Wewy+VyjQyC7y1mj2UZlZeX761mTAj29R/ocrlcwzvZqCwE0p9xq0UfEzsXSONyJLKJzYCN1kEyj6GXANRt2MCBfsQuEeVAbJuyAMj35+g7binxPYGBHP1Wn/uZ+CRRdYDnVsu8zNE4sM4Kzin623YbW0J1I0cnpj/20MQtxP8IAJs4urDicWevReXEb4eoNveX7Ozs7L/zegiq163Jzs7Ozvmnk+DAs2MnTJgwYeKrBlqe4ah43COPjPqL+J8hOjx89IQJEyZMfP0RmyyH+gMCxZ6WvgLVvhKS/QSSMQLJucAEgfztLhKSmbbYbEDndB0vgF2gZSl0PKoWqfYagK91TIGOr2ywNRGal6sthXCVhlXwIqSpLYA3lH8aBf3PuuVqh0FycJVCzVNgF6s8rhaFT1WmWzBfoWYY2PdUvpmsrfbcjoxX4hzwaIv3q0S3vmkP6RbLzktcWtkC/BKVBB2fqcxg0CXrtujmF22g6bvWkU5Dp9MZ0hR2bDr0nTX/bvrjs2EtoVy3z5KM/K1m5orE+hC3jzFknZFN4BtnyEY4G8IvxpCObsMBbUd9nL1h4x8fPtsCYt9YQzrGH1ZQOCAkAQAA8AwAnQEqyAA0AD6RSJ5LpaSioaRW2DCwEgllbt1C5/wDTzeG/jn+RnQ16Bd2sMC+weYD+AYgD9Hf8B/APfM5zPgAPJ1/aL4Mv2VAXq6Q83Pyfkxkt1XNbRNbkbcT4+DpxtWSoMLYCwFgQLYCwFgHAAD+6me25F3Qr/1Z2ttQylZji4H6xztfQAo4WPY9m9afaNJhuc5wSoxzQpJoxUEY/50YzQ0Wfs/P/+VNYn+kk3wmkf3s+6wV1QR0xQ57Pumff1KBSiVym329ORYsKTQ5Jh8DqkHZ/U67qJ+J8OOZkyZVz77I1Mw0WJMINzhnPp//yntV3eHXZxSgF0QTPW7Pl+xTvgBIP/uNwIm6HYG//+rFv4R3TwErcDZgcajjNAAAAAAAAFhNUCDYBAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDEgNzkuYThkNDc1MywgMjAyMy8wMy8yMy0wODo1NjozNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjUtMTItMDhUMDk6MTE6MDYtMDY6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1MzIxMWYxOS1kZjY2LTk3NGUtOGZkNi1kZGNmMTBjYTcxZmQiPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJjcmVhdGVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjUzMjExZjE5LWRmNjYtOTc0ZS04ZmQ2LWRkY2YxMGNhNzFmZCIgc3RFdnQ6d2hlbj0iMjAyNS0xMi0wOFQwOToxMDoxNC0wNjowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjYgKFdpbmRvd3MpIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pg==">
-                            </a>
-                            <p style="margin: 0px 0px 30px 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #323130; line-height: 1.6;">Supervisors, please be sure to forward this message to your new employees to ensure they've received it.</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-    <custom name="opencounter" type="tracking"/>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: ${FF};">
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f4f4f4" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #f4f4f4;">
+    <tr>
+        <td style="padding: 20px 0;">
+
+            <!-- View in Browser -->
+            <table role="presentation" class="cetl-container" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; margin: 0 auto; max-width: 600px; width: 100%;">
+                <tr>
+                    <td class="cetl-pad" style="padding: 0 24px 15px 24px; text-align: center;">
+                        <p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 14px; color: #323130; line-height: 20px; margin: 0;">Having trouble viewing this email? <a href="${browserUrl}" style="color: #0078d4;">View it in your browser</a>.</p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Email Container -->
+            <table role="presentation" class="cetl-container" cellspacing="0" cellpadding="0" border="0" width="600" align="center" bgcolor="#ffffff" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; margin: 0 auto; max-width: 600px; width: 100%; background-color: #ffffff;">
+
+                <!-- Banner -->
+                <tr>
+                    <td bgcolor="#002F87" class="cetl-pad cetl-navy" style="background-color: #002F87; padding: 24px;">
+                        <p class="cetl-banner-title" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 32px; font-weight: bold; color: #ffffff; letter-spacing: 2px; margin: 0; line-height: 34px;">CETL</p>
+                        <p class="cetl-banner-sub" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 18px; font-weight: bold; color: #ffffff; margin: 5px 0 0 0; line-height: 24px;">Center for Excellence in Teaching and Learning</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td bgcolor="#1E8EF7" height="7" style="background-color: #1E8EF7; height: 7px; font-size: 0; line-height: 0; mso-line-height-rule: exactly;">&nbsp;</td>
+                </tr>
+
+                <!-- Opening Section -->
+                <tr>
+                    <td bgcolor="#ffffff" class="cetl-pad" style="background-color: #ffffff; padding: 24px 24px 0 24px;">
+${indent(openingHeadingHTML, 24)}
+${indent(openingBody, 24)}
+${indent(contactHTML, 24)}
+                    </td>
+                </tr>
+${tocHTML}${sectionsHTML}
+                <!-- Footer -->
+                <tr>
+                    <td bgcolor="#ffffff" class="cetl-pad cetl-logo-cell" style="background-color: #ffffff; padding: 0px 24px 24px 24px; text-align: left;">
+                        <a class="cetl-logo-link" href="https://www.dallascollege.edu/" style="display: inline-block; text-decoration: none; border: 0; background-color: transparent;"><img class="cetl-logo-img" src="https://image.msg.dallascollege.edu/lib/fe2b11727364047f721d75/m/1/7ab447aa-e12e-4014-838c-3c885f04358f.png" alt="Dallas College" width="200" height="52" style="background-color: transparent; width: 200px; height: auto; display: block; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; margin: 0 0 15px 0; mso-line-height-rule: exactly; font-family: ${FF}; font-size: 20px; font-weight: bold; color: #002F87; letter-spacing: 1px; line-height: 26px;" /></a>
+                        <p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 14px; color: #323130; margin: 0; line-height: 20px;">Supervisors, please be sure to forward this message to your new employees to ensure they've received it.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td bgcolor="#1E8EF7" height="5" style="background-color: #1E8EF7; height: 5px; font-size: 0; line-height: 0; mso-line-height-rule: exactly;">&nbsp;</td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+<custom name="opencounter" type="tracking"/>
 </body>
 </html>`;
-            
-            document.getElementById('html-output').textContent = emailHTML;
-            document.getElementById('output-section').style.display = 'block';
-            document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function copyToClipboard() {
-            navigator.clipboard.writeText(document.getElementById('html-output').textContent).then(() => alert('✅ HTML copied to clipboard!'));
-        }
-    </script>
+
+    document.getElementById('html-output').textContent = emailHTML;
+    document.getElementById('output-section').style.display = 'block';
+    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyToClipboard() {
+    navigator.clipboard.writeText(document.getElementById('html-output').textContent)
+        .then(() => alert('HTML copied to clipboard.'));
+}
+
+/* Defaults on load */
+openingBodyQuill.root.innerHTML = '<p>In this newsletter, </p>';
+</script>
 </body>
 </html>
