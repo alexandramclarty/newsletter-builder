@@ -456,9 +456,10 @@ function buildButton(label, url, contextTitle) {
 </table>`;
 }
 
-function buildNavyBar(heading, anchor, padding) {
+// Every navy bar is the same height, whatever the section type.
+function buildNavyBar(heading, anchor) {
     return `                <tr>
-                    <td id="${anchor}" bgcolor="#002F87" class="cetl-pad cetl-navy" style="background-color: #002F87; padding: ${padding};">
+                    <td id="${anchor}" bgcolor="#002F87" class="cetl-pad cetl-navy" style="background-color: #002F87; padding: 15px 24px;">
                         <h2 class="cetl-h2" style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; line-height: 32px;">${safeText(heading)}</h2>
                     </td>
                 </tr>
@@ -841,7 +842,7 @@ function renderHighlightSection(s, index) {
     let html = `
                 ${sectionComment(index, s.heading)}
 `;
-    html += buildNavyBar(s.heading, s.anchor, '15px 24px');
+    html += buildNavyBar(s.heading, s.anchor);
     html += `                <tr>
                     <td bgcolor="#eff6fc" class="cetl-pad" style="background-color: #eff6fc; padding: ${button ? '24px 24px 0 24px' : '24px'};">
 ${parts.map(p => indent(p, 24)).join('\n')}
@@ -867,7 +868,7 @@ function renderWebinarSection(s, index) {
     let html = `
                 ${sectionComment(index, s.heading)}
 `;
-    html += buildNavyBar(s.heading, s.anchor, '20px 24px');
+    html += buildNavyBar(s.heading, s.anchor);
     html += `                <tr>
                     <td bgcolor="#ffffff" class="cetl-pad" style="background-color: #ffffff; padding: 20px 24px 36px 24px;">
 ${intro ? indent(intro, 24) + '\n' : ''}                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
@@ -1043,7 +1044,7 @@ ${tocHTML}${sectionsHTML}
                 <tr>
                     <td bgcolor="#ffffff" class="cetl-pad cetl-logo-cell" style="background-color: #ffffff; padding: 0px 24px 24px 24px; text-align: left;">
                         <a class="cetl-logo-link" href="https://www.dallascollege.edu/" style="display: inline-block; text-decoration: none; border: 0; background-color: transparent;"><img class="cetl-logo-img" src="https://image.msg.dallascollege.edu/lib/fe2b11727364047f721d75/m/1/7ab447aa-e12e-4014-838c-3c885f04358f.png" alt="Dallas College" width="200" height="52" style="background-color: transparent; width: 200px; height: auto; display: block; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; margin: 0 0 15px 0; mso-line-height-rule: exactly; font-family: ${FF}; font-size: 20px; font-weight: bold; color: #002F87; letter-spacing: 1px; line-height: 26px;" /></a>
-                        <p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 14px; color: #323130; margin: 0; line-height: 20px;">Supervisors, please be sure to forward this message to your new employees to ensure they've received it.</p>
+                        <p style="mso-line-height-rule: exactly; font-family: ${FF}; font-size: 14px; color: #323130; margin: 0; line-height: 20px;">Supervisors, please be sure to forward this message to your new employees to ensure they&rsquo;ve received it.</p>
                     </td>
                 </tr>
                 <tr>
